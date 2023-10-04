@@ -1,103 +1,41 @@
-import { rand } from "@vueuse/core";
-import { Ref } from "nuxt/dist/app/compat/capi";
+// gameStore.ts
 
-type GameState = {
-  messeges: Array<string>;
-  hero: CharacterState;
-  monsters: Array<CharacterState>;
-  weapons: Array<CharacterState>;
-  armors: Array<CharacterState>;
-};
+import { Module, VuexModule, Mutation, Action } from 'vuex';
 
-type CharacterState = {
-  name: string;
-  hp: number;
-  st: number;
-  ac: number;
-  dc: number;
-};
+@Module({ namespaced: true })
+export default class GameStore extends VuexModule {
+  // ステート（データ）の初期値
+  games: Game[] = [];
 
-export const useGameStore = () => {
-  const state = useState<GameState>("game", () => ({
-    messeges: [],
-    hero: {
-      name: "",
-      hp: 0,
-      st: 0,
-      ac: 0,
-      dc: 0,
-    },
-    monsters: [
-      {
-        name: "",
-        hp: 0,
-        st: 0,
-        ac: 0,
-        dc: 0,
-      },
-      {
-        name: "",
-        hp: 0,
-        st: 0,
-        ac: 0,
-        dc: 0,
-      },
-    ],
-    weapons: [
-      {
-        name: "",
-        hp: 0,
-        st: 0,
-        ac: 0,
-        dc: 0,
-      },
-    ],
-    armors: [
-      {
-        name: "",
-        hp: 0,
-        st: 0,
-        ac: 0,
-        dc: 0,
-      },
-    ]
-  }));
-  return {
-    state: readonly(state),
-    init: init(state),
-    battle: battle(state),
-    addMessage: addMessage(state)
-  };
-};
+  // ミューテーション（ステートの変更）を定義
+  @Mutation
+  setGames(payload: Game[]) {
+    this.games = payload;
+  }
 
-const init = (state: Ref<GameState>) => {
-  return (heroName: string) => {
-    state.value.hero = initCharacter(heroName, 1, 100)
-    state.value.monsters.push(initCharacter("スライム", 1, 100))
-    state.value.monsters.push(initCharacter("ゴブリン", 1, 100))
-    state.value.monsters.push(initCharacter("ゴブリン", 1, 100))
-  };
-};
-
-const initCharacter = (name: string, min: number, max: number): CharacterState => {
-  return {
-    name: name,
-    hp: rand(min, max),
-    st: rand(min, max),
-    ac: rand(min, max),
-    dc: rand(min, max)
-  };
-};
-
-const addMessage = (state: Ref<GameState>) => {
-  return (message: string) => {
-    state.value.messeges.push(message)
+  // アクション（非同期処理やミューテーションの実行）を定義
+  @Action({ commit: 'setGames' })
+  async fetchGames() {
+    try {
+      // ゲームデータをAPIから取得するなどの処理を実行
+      const response = await fetch('/api/games');
+      const gamesData = await response.json();
+      
+      // ゲームデータを返す（ミューテーションによってコミットされます）
+      return gamesData;
+    } catch (error) {
+      // エラーハンドリング
+      console.error('ゲームデータの取得中にエラーが発生しました', error);
+      throw error; // エラーを呼び出し元に伝える
+    }
   }
 }
 
-const battle = (state: Ref<GameState>) => {
-  return (count: number) => (
-    state.value.hero.hp = count
-  );
-};
-
+// ゲームオブジェクトの型定義
+interface Game {
+  id: number;
+  title: string;
+  platform: string;
+  releaseDate: string;
+  // 他のプロパティを追加する場合はここに追加
+}
